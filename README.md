@@ -74,6 +74,63 @@ python3 asvz_bot.py training \
   45743
 ```
 
+
+## Launcher
+
+Enroll by using `asvz_bot_launcher.py`. 
+```bash
+python3 asvz_bot_launcher.py
+```
+Edit the lessons list to describe the lessons you would like to be enrolled in.
+```
+lessons = [
+    {
+        'weekday': 'Tu',
+        'start-time': '17:00',
+        'trainer': None,
+        'facility': 'Sport Center Winterthur',
+        'level': None,
+        'sport_id': SPORT_IDS['Muscle Pump']
+    },
+    {
+        'weekday': 'Fr',
+        'start-time': '17:00',
+        'trainer': None,
+        'facility': 'Sport Center Winterthur',
+        'level': None,
+        'sport_id': SPORT_IDS['Muscle Pump']
+    }
+]
+
+```
+With the list above the bot will try to enroll you into the first Muscle Pump lesson after 17:00 on Tuesday and Friday in the Sport Center Winterthur.
+
+### Running as a service
+
+To run this in the background each time you start your pc add a file named `asvz.service` to `/etc/systemd/system`. 
+```
+[Unit]
+Description=ASVZ Enroller
+After=networking.target
+
+[Service]
+ExecStartPre=/bin/sleep 60
+WorkingDirectory=/home/<user>/
+User=<user>
+ExecStart=/usr/bin/python3 /<path-to>/asvz-bot/src/asvz_bot_launcher.py
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then run 
+```bash
+sudo systemctl enable asvz
+```
+to activate the service.
+
+
+
 ## Development
 
 ### Script
