@@ -11,14 +11,13 @@ from pathlib import Path
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.utils import ChromeType
+from webdriver_manager.firefox import GeckoDriverManager
 
 TIMEFORMAT = "%H:%M"
 
@@ -144,7 +143,6 @@ class AsvzEnroller:
     @classmethod
     def from_lesson_attributes(
         cls,
-        chromedriver_path,
         weekday,
         start_time,
         trainer,
@@ -172,7 +170,8 @@ class AsvzEnroller:
         lesson_url = None
         driver = None
         try:
-            driver = AsvzEnroller.get_driver(chromedriver_path)
+            driver = cls.get_driver()
+            # driver = AsvzEnroller.get_driver(chromedriver_path)
             driver.get(sport_url)
             driver.implicitly_wait(3)
 
@@ -224,16 +223,16 @@ class AsvzEnroller:
             if driver is not None:
                 driver.quit()
 
-        return cls(chromedriver_path, lesson_url, creds)
+        return cls(lesson_url, creds)
 
     @staticmethod
-    def get_driver(chromedriver_path):
-        options = Options()
+    def get_driver():
+        options = FirefoxOptions()
         options.add_argument("--private")
         options.add_argument("--headless")
-        options.add_experimental_option("prefs", {"intl.accept_languages": "de"})
-        return webdriver.Chrome(
-            service=Service(chromedriver_path),
+        options.set_preference("intl.accept_languages", "de")
+        return webdriver.Firefox(
+            service=FirefoxService(GeckoDriverManager().install()),
             options=options,
         )
 
@@ -260,8 +259,7 @@ class AsvzEnroller:
             )
             time.sleep(sleep_time)
 
-    def __init__(self, chromedriver, lesson_url, creds):
-        self.chromedriver = chromedriver
+    def __init__(self, lesson_url, creds):
         self.lesson_url = lesson_url
         self.creds = creds
 
@@ -277,7 +275,7 @@ class AsvzEnroller:
     def enroll(self):
         logging.info("Checking login credentials")
         try:
-            driver = AsvzEnroller.get_driver(self.chromedriver)
+            driver = self.get_driver()
             driver.get(self.lesson_url)
             driver.implicitly_wait(3)
             self.__organisation_login(driver)
@@ -296,7 +294,7 @@ class AsvzEnroller:
             AsvzEnroller.wait_until(self.enrollment_start)
 
         try:
-            driver = AsvzEnroller.get_driver(self.chromedriver)
+            driver = self.get_driver()
             driver.get(self.lesson_url)
             driver.implicitly_wait(3)
 
@@ -504,24 +502,27 @@ def validate_start_time(start_time):
         raise argparse.ArgumentTypeError(msg)
 
 
-def get_chromedriver_path():
-    webdriver_manager = None
-    try:
-        webdriver_manager = ChromeDriverManager(chrome_type=ChromeType.CHROMIUM)
-    except:
-        webdriver_manager = None
+def get_firefoxdriver_path():
+    return GeckoDriverManager().install()
 
-    if webdriver_manager is None:
-        try:
-            webdriver_manager = ChromeDriverManager(chrome_type=ChromeType.GOOGLE)
-        except:
-            webdriver_manager = None
+# def get_chromedriver_path():
+#     webdriver_manager = None
+#     try:
+#         webdriver_manager = ChromeDriverManager(chrome_type=ChromeType.CHROMIUM)
+#     except:
+#         webdriver_manager = None
 
-    if webdriver_manager is None:
-        logging.error("Failed to find chrome/chromium")
-        exit(1)
+#     if webdriver_manager is None:
+#         try:
+#             webdriver_manager = ChromeDriverManager(chrome_type=ChromeType.GOOGLE)
+#         except:
+#             webdriver_manager = None
 
-    return webdriver_manager.install()
+#     if webdriver_manager is None:
+#         logging.error("Failed to find chrome/chromium")
+#         exit(1)
+
+#     return webdriver_manager.install()
 
 
 def main():
@@ -601,7 +602,8 @@ def main():
         logging.error(e)
         exit(1)
 
-    chromedriver_path = get_chromedriver_path()
+    # chromedriver_path = get_chromedriver_path()
+    chromedriver_path = get_firefoxdriver_path()
 
     enroller = None
     if args.type == "lesson":
@@ -609,15 +611,14 @@ def main():
         enroller = AsvzEnroller(chromedriver_path, lesson_url, creds)
     elif args.type == "training":
         enroller = AsvzEnroller.from_lesson_attributes(
-            chromedriver_path,
-            args.weekday,
-            args.start_time,
-            args.trainer,
-            args.facility,
-            args.level,
-            args.sport_id,
-            creds,
-        )
+        args.weekday,
+        args.start_time,
+        args.trainer,
+        args.facility,
+        args.level,
+        args.sport_id,
+        creds,
+    )
     else:
         raise AsvzBotException("Unknown enrollment type: '{}".format(args.type))
 

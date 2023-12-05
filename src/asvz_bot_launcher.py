@@ -10,7 +10,7 @@ SPORT_IDS = {
 lessons = [
     {
         'weekday': 'Tu',
-        'start-time': '17:00',
+        'start-time': '17:55',
         'trainer': None,
         'facility': 'Sport Center Winterthur',
         'level': None,
@@ -18,7 +18,7 @@ lessons = [
     },
     {
         'weekday': 'Fr',
-        'start-time': '17:00',
+        'start-time': '18:00',
         'trainer': None,
         'facility': 'Sport Center Winterthur',
         'level': None,
